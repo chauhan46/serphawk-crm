@@ -48,7 +48,7 @@ test_*.py
 *.log
 *.xlsx
 debug_*
-*.json
+# *.json
 create_test_user.sql
 __pycache__/
 *.pyc
