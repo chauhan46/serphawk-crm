@@ -10,17 +10,19 @@ The application provides functionality for client management, projects, tasks, c
 
 The application has been containerized using Docker and deployed on Amazon EC2.
 
+---
+
 ## Live Application
 
-Deployed Application:
+**Deployed Application:**
 
 http://52.207.218.248:3000
 
-Deployment Platform: AWS EC2
+**Deployment Platform:** AWS EC2
 
-Containerization: Docker and Docker Compose
+**Containerization:** Docker and Docker Compose
 
-Architecture:
+**Architecture:**
 
 Next.js Frontend → FastAPI Backend → PostgreSQL Database
 
@@ -86,25 +88,37 @@ Next.js Frontend → FastAPI Backend → PostgreSQL Database
 
 ---
 
-# AWS Deployment Architecture
+## AWS Deployment Architecture
 
-The application is deployed on an Amazon EC2 instance using Docker and Docker Compose.
+The application is deployed on a single Amazon EC2 instance using Docker and Docker Compose.
 
-## AWS Services Used
+The EC2 instance hosts the Next.js frontend, FastAPI backend, and PostgreSQL database containers.
 
-### Amazon EC2
+### AWS Architecture Diagram
+
+![SERP Hawk CRM AWS Architecture](docs/aws-architecture.svg)
+
+### AWS Services Used
+
+#### Amazon EC2
 
 Amazon EC2 is used as the compute platform for hosting the CRM application.
 
-The EC2 instance runs the Docker containers for the frontend, backend, and PostgreSQL database.
+The EC2 instance runs the Docker containers for:
 
-### Amazon EBS
+- Next.js frontend
+- FastAPI backend
+- PostgreSQL database
 
-The EC2 instance uses Amazon EBS storage for its root volume and application storage.
+#### Amazon EBS
 
-### EC2 Security Group
+Amazon EBS provides storage attached to the EC2 instance.
 
-The Security Group controls inbound network access to the EC2 instance.
+The EC2 root volume and application storage use EBS.
+
+#### EC2 Security Group
+
+The EC2 Security Group controls inbound network access to the application.
 
 The deployment uses the following ports:
 
@@ -112,7 +126,9 @@ The deployment uses the following ports:
 - Frontend - TCP 3000
 - Backend - TCP 8000
 
-### Docker
+PostgreSQL port 5432 is used internally by Docker Compose and is not exposed through the EC2 Security Group.
+
+#### Docker
 
 Docker is used to containerize the application components:
 
@@ -120,48 +136,68 @@ Docker is used to containerize the application components:
 - FastAPI backend
 - PostgreSQL database
 
-### Docker Compose
+#### Docker Compose
 
-Docker Compose is used to create and manage the application containers and their networking.
+Docker Compose is used to create and manage the application containers and their internal networking.
 
 ---
 
 ## Application Architecture
 
+The application runs inside Docker containers on Amazon EC2.
+
 ```text
-                         Internet
-                            |
-                            v
-                    +---------------+
-                    |   AWS EC2     |
-                    |               |
-                    | Security Group|
-                    +-------+-------+
-                            |
-                            v
-                  +---------------------+
-                  |       Docker        |
-                  |                     |
-                  |  +---------------+  |
-                  |  | Next.js       |  |
-                  |  | Frontend      |  |
-                  |  | Port 3000     |  |
-                  |  +-------+-------+  |
-                  |          |          |
-                  |          v          |
-                  |  +---------------+  |
-                  |  | FastAPI       |  |
-                  |  | Backend       |  |
-                  |  | Port 8000     |  |
-                  |  +-------+-------+  |
-                  |          |          |
-                  |          v          |
-                  |  +---------------+  |
-                  |  | PostgreSQL    |  |
-                  |  | Database      |  |
-                  |  | Port 5432     |  |
-                  |  +---------------+  |
-                  +---------------------+
-                            |
-                            v
-                         EBS Storage
+                              INTERNET
+                                  |
+                                  | HTTP :3000
+                                  v
+                    +---------------------------+
+                    |       EC2 SECURITY        |
+                    |          GROUP            |
+                    |                           |
+                    |  SSH    :22   (Admin)     |
+                    |  HTTP   :3000 (Frontend)  |
+                    |  TCP    :8000 (Backend)   |
+                    +-------------+-------------+
+                                  |
+                                  v
+              +-------------------------------------------+
+              |              AMAZON EC2                    |
+              |          Amazon Linux 2023                |
+              |                                             |
+              |  +---------------------------------------+  |
+              |  |           DOCKER COMPOSE              |  |
+              |  |                                       |  |
+              |  |  +-------------------------------+    |  |
+              |  |  |       Next.js Frontend        |    |  |
+              |  |  |                               |    |  |
+              |  |  |       Container Port: 3000    |    |  |
+              |  |  +---------------+---------------+    |  |
+              |  |                  |                    |  |
+              |  |                  | API Requests       |  |
+              |  |                  v                    |  |
+              |  |  +-------------------------------+    |  |
+              |  |  |        FastAPI Backend        |    |  |
+              |  |  |                               |    |  |
+              |  |  |       Container Port: 8000    |    |  |
+              |  |  +---------------+---------------+    |  |
+              |  |                  |                    |  |
+              |  |                  | Database Queries  |    |
+              |  |                  v                    |  |
+              |  |  +-------------------------------+    |  |
+              |  |  |       PostgreSQL Database      |    |  |
+              |  |  |                               |    |  |
+              |  |  |       Container Port: 5432    |    |  |
+              |  |  +-------------------------------+    |  |
+              |  |                                       |  |
+              |  +---------------------------------------+  |
+              |                                             |
+              +-------------------+-------------------------+
+                                  |
+                                  v
+                    +---------------------------+
+                    |        AMAZON EBS         |
+                    |                           |
+                    |     EC2 Root Storage      |
+                    |   Application/Data Storage|
+                    +---------------------------+
