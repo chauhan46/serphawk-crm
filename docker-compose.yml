@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16
+    container_name: serphawk-db
+    environment:
+      POSTGRES_DB: serp_hawk_crm
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d serp_hawk_crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: serphawk-backend:1.0
+    container_name: serphawk-backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD}@db:5432/serp_hawk_crm
+      SECRET_KEY: ${SECRET_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: serphawk-frontend:1.0
+    container_name: serphawk-frontend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
